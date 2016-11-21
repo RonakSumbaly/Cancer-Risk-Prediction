@@ -1,5 +1,52 @@
 import pandas as pd
+import seaborn as sns
 from __init__ import *
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+
+# dark grey color
+ALMOST_BLACK = '#262626'
+
+
+def normalize_datasets(train, test):
+    """
+    Normalize the training and testing datasets
+
+    :param train: training dataset
+    :param test: testing dataset
+    :return: normalized datasets
+    """
+    columns = train.columns[:-1]
+    train[columns] = (train[columns] - train[columns].mean()) / (train[columns].max() - train[columns].min())
+    test[columns] = (test[columns] - test[columns].mean()) / (test[columns].max() - test[columns].min())
+
+    return train, test
+
+
+def visualize_data(data):
+    """
+    Visualize the data in 2D
+    :param data: data for visualization
+    """
+
+    # Instantiate a PCA object for the sake of easy visualisation
+    pca = PCA(n_components=2)
+
+    # Fit and transform x to visualise inside a 2D feature space
+    x_vis = pca.fit_transform(data[data.columns[:-1]])
+    y = data['Tumor'].as_matrix()
+
+    # Plot the original data
+    # Plot the two classes
+    palette = sns.color_palette()
+
+    plt.scatter(x_vis[y == 0, 0], x_vis[y == 0, 1], label="Normal", alpha=0.5,
+                edgecolor=ALMOST_BLACK, facecolor=palette[0], linewidth=0.15)
+    plt.scatter(x_vis[y == 1, 0], x_vis[y == 1, 1], label="Tumor", alpha=0.5,
+                edgecolor=ALMOST_BLACK, facecolor=palette[2], linewidth=0.15)
+
+    plt.legend()
+    plt.show()
 
 
 def cancer_gene_census():
@@ -119,12 +166,19 @@ def main():
         methyl_data = methyl_data.transpose()
 
         normal_cases = methyl_data[methyl_data['Tumor'] == 0]
+        logger.info(normal_cases.shape)
         train_normal_cases = normal_cases.sample(frac=0.7, random_state=200)
+        logger.info(train_normal_cases.shape)
         test_normal_cases = normal_cases.drop(train_normal_cases.index)
+        logger.info(train_normal_cases.shape)
 
         tumor_cases = methyl_data[methyl_data['Tumor'] != 0]
+        logger.info(tumor_cases.shape)
         train_tumor_cases = tumor_cases.sample(frac=0.7, random_state=200)
+        logger.info(train_tumor_cases.shape)
+
         test_tumor_cases = tumor_cases.drop(train_tumor_cases.index)
+        logger.info(test_tumor_cases.shape)
 
         training_data = training_data.append(train_normal_cases)
         training_data = training_data.append(train_tumor_cases)
@@ -140,6 +194,7 @@ def main():
     testing_data.to_pickle(test_path)
 
     logger.info('Processing completed!')
+    visualize_data(training_data)
 
     return training_data, testing_data
 
